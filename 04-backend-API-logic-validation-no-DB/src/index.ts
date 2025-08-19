@@ -4,7 +4,7 @@ const app = express();
 const port = 4001;
 
 interface Message {
-    id: number,
+    id: string,
     text: string
 }
 
@@ -15,12 +15,12 @@ app.post("/messages", (req: Request, res: Response) => {
     const body = req.body;
 
     if(!body){
-        return { status: 400, statusText: "Bad Request" }
+        return res.status(400).json({message: "bad request"})
     }
 
     database.push(body);
 
-    return { status: 200, statusText: "Success" }
+    return res.status(200).json({ message: "success" })
 
 })
 
@@ -28,16 +28,17 @@ app.delete("/messages/:id", (req: Request, res: Response) => {
     const id = req.params.id;
 
     if(!id){
-        return { status: 400, statusText: "Invalid ID" }
+        return res.status(400).json({message: "bad request"})
     }
     
     for (let i = 0; i < database.length; i++) {
-        if (database[i] && database[i].id === id) {
+        if (database[i] && database[i]?.id === id) {
             database.splice(i, 1)
             break
         }
     }
 
+    return res.status(200).json({ message: "success" })
 
 })
 
@@ -46,11 +47,11 @@ app.patch("/messages/:id", (req: Request, res: Response) => {
     const id = req.params.id;
 
     if(!id){
-        return { status: 400, statusText: "Invalid id" }
+        return res.status(400).json({message: "bad request"})
     }
 
     if(!body){
-        return { status: 400, statusText: "Invalid body" }
+        return res.status(400).json({message: "bad request"})
     }
 
     for(let obj of database){
@@ -60,7 +61,7 @@ app.patch("/messages/:id", (req: Request, res: Response) => {
         }
     }
    
-    return { status: 200, statusText: "Success" }
+    return res.status(200).json({ message: "success" })
 
 })
 
@@ -69,29 +70,28 @@ app.get("/messages/:id", (req: Request, res: Response) => {
     const id = req.params.id;
 
     if(!body){
-        return { status: 400, statusText: "Bad Request" }
+        return res.status(400).json({message: "bad request"})
     }
 
     if(!id){
-        return { status: 400, statusText: "Invalid id" }
+        return res.status(400).json({message: "bad request"})
     }
 
-    for(const obj of database){
-        if(obj.id === id){
-            return { status: 200, statusText: "success", data: obj }
-        }
-    }
+    const obj = database.find(m => m.id === id);
 
+    return res.status(200).json({ message: "success", data: obj })
 })
 
 app.get("/messages", (req: Request, res: Response) => { //pagination
-    const body = req.body;
+    let page = Number(req.query.page) || 1;
+    let limit = Number(req.query.limit) || 10;
+    if (page < 1) page = 1;
+    if (limit < 1) limit = 10;
 
-    if(!body){
-        return { status: 400, statusText: "Bad Request" }
-    }
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const items = database.slice(start, end);
 
-    console.log("New Message: ", body)
-
+    return res.status(200).json({ page, limit, data: items });
 })
 
